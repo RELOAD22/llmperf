@@ -30,7 +30,6 @@ export OPENAI_API_KEY=EMPTY; export OPENAI_API_BASE="http://127.0.0.1:$PORT/v1/"
 python token_benchmark_ray.py --model $MODEL_NAME --mean-input-tokens $isl   --stddev-input-tokens 0 --mean-output-tokens $osl   --stddev-output-tokens 0 --max-num-completed-requests $total_requests --timeout 600 --num-concurrent-requests $concurrent_requests   --results-dir $results --llm-api openai --additional-sampling-params '{}' --model-dir $MODEL_PATH
 ```
 
-
 ### Variables
 
 | Name | Description |
@@ -83,6 +82,28 @@ In `tokenizer_config.json`, set eos_token to `<|noeot_id|>`:
 | 64                     | 64                | 128/2048     |
 | 128                    | 128               | 128/2048     |
 | 256                    | 256               | 128/2048     |
+
+### lmdeploy Setup
+```bash
+lmdeploy serve api_server $MODEL_PATH --model-name $MODEL_NAME --tp 1 --chat-template template_chatml_lmdeploy.json --server-port $PORT
+```
+
+### llama.cpp Setup
+Set -c according to gpu memory.
+```bash
+./llama-server -m $GGUF_MODEL_PATH --port $PORT -ngl 2000000 -np 256 -c 300000 --chat-template chatml
+```
+
+### ExLlamaV2(tabbyAPI) Setup
+model-dir should be the path to the model's parent directory.
+```bash
+./start.sh --disable-auth True --api-servers OAI --model-dir $MODEL_PARENT_PATH --model-name $MODEL_NAME --prompt-template chatml
+```
+
+### text-generation-webui Setup
+```bash
+python server.py --api --model $MODEL_PATH --model-dir $MODEL_PARENT_PATH --loader Transformers --verbose --api-port $PORT
+```
 
 # Basic Usage
 
