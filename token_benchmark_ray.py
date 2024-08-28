@@ -23,7 +23,7 @@ from llmperf.utils import (
 )
 from tqdm import tqdm
 
-from transformers import LlamaTokenizerFast
+from transformers import LlamaTokenizerFast, AutoTokenizer
 
 def get_token_throughput_latencies(
     model: str,
@@ -36,6 +36,7 @@ def get_token_throughput_latencies(
     max_num_completed_requests: int = 500,
     test_timeout_s=90,
     llm_api="openai",
+    model_dir: str = "",
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     """Get the token throughput and latencies for the given model.
 
@@ -51,6 +52,7 @@ def get_token_throughput_latencies(
             this to increase the amount of load and vice versa.
         test_timeout_s: The amount of time to run the test for before reporting results.
         llm_api: The name of the llm api to use. Either "openai" or "litellm".
+        model_dir: The model directory.
 
     Returns:
         A summary of the performance metrics collected across all completed requests
@@ -59,9 +61,13 @@ def get_token_throughput_latencies(
     """
     random.seed(11111)
 
-    tokenizer = LlamaTokenizerFast.from_pretrained(
-        "hf-internal-testing/llama-tokenizer"
-    )
+    if model_dir:
+        tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    else:
+        tokenizer = LlamaTokenizerFast.from_pretrained(
+            "hf-internal-testing/llama-tokenizer"
+        )
+        print("WARNNING: Using default tokenizer, please provide a model directory to use a custom tokenizer.")
     get_token_length = lambda text: len(tokenizer.encode(text))
     
     if not additional_sampling_params:
@@ -112,7 +118,7 @@ def get_token_throughput_latencies(
             all_metrics = []
             for out in outs:
                 request_metrics, gen_text, _ = out
-                num_output_tokens = get_token_length(gen_text)
+                num_output_tokens = get_token_length(gen_text) # num_output_tokens = request_metrics[common_metrics.NUM_OUTPUT_TOKENS]
                 if num_output_tokens: 
                     request_metrics[common_metrics.INTER_TOKEN_LAT] /= num_output_tokens
                 else:
@@ -276,6 +282,7 @@ def run_token_benchmark(
     additional_sampling_params: str,
     results_dir: str,
     user_metadata: Dict[str, Any],
+    model_dir: str,
 ):
     """
     Args:
@@ -293,6 +300,7 @@ def run_token_benchmark(
             For more information see the LLM APIs documentation for the completions.
         results_dir: The directory to save the results to.
         user_metadata: Additional metadata to include in the results.
+        model_dir: The model directory.
     """
     if mean_input_tokens < 40:
         print(
@@ -311,10 +319,11 @@ def run_token_benchmark(
         stddev_output_tokens=stddev_output_tokens,
         num_concurrent_requests=num_concurrent_requests,
         additional_sampling_params=json.loads(additional_sampling_params),
+        model_dir=model_dir,
     )
 
     if results_dir:
-        filename = f"{model}_{mean_input_tokens}_{mean_output_tokens}"
+        filename = f"{model}_{num_concurrent_requests}_{mean_input_tokens}_{mean_output_tokens}"
         filename = re.sub(r"[^\w\d-]+", "-", filename)
         filename = re.sub(r"-{2,}", "-", filename)
         summary_filename = f"{filename}_summary"
@@ -446,6 +455,15 @@ args.add_argument(
         "name=foo,bar=1. These will be added to the metadata field of the results. "
     ),
 )
+args.add_argument(
+    "--model-dir",
+    type=str,
+    default="",
+    help=(
+        "The model directory. (For Tokenizer)"
+        " (default: %(default)s)"
+    ),
+)
 
 if __name__ == "__main__":
     env_vars = dict(os.environ)
@@ -472,4 +490,5 @@ if __name__ == "__main__":
         additional_sampling_params=args.additional_sampling_params,
         results_dir=args.results_dir,
         user_metadata=user_metadata,
+        model_dir=args.model_dir,
     )

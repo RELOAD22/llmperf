@@ -9,6 +9,56 @@ cd llmperf
 pip install -e .
 ```
 
+# Usage Example for vLLM testing
+
+Install vLLM with `pip` or [from source](https://vllm.readthedocs.io/en/latest/getting_started/installation.html#build-from-source):
+
+```bash
+pip install vllm
+```
+
+Start the vLLM server:
+
+```bash
+python -m vllm.entrypoints.openai.api_server --model $MODEL_PATH --served-model-name $MODEL_NAME --port $PORT --chat-template $TEMPLATE_FILE --disable-log-requests --uvicorn-log-level error
+```
+
+Run the LLMPerf test:
+
+```bash
+export OPENAI_API_KEY=EMPTY; export OPENAI_API_BASE="http://127.0.0.1:$PORT/v1/"
+python token_benchmark_ray.py --model $MODEL_NAME --mean-input-tokens $isl   --stddev-input-tokens 0 --mean-output-tokens $osl   --stddev-output-tokens 0 --max-num-completed-requests $total_requests --timeout 600 --num-concurrent-requests $concurrent_requests   --results-dir $results --llm-api openai --additional-sampling-params '{}' --model-dir $MODEL_PATH
+```
+
+
+### Variables
+
+| Name | Description |
+| :- | - |
+| `$isl` | Benchmark input sequence length. |
+| `$osl` | Benchmark output sequence length. |
+| `$total_requests` | Total number of requests to make. Suggestion: 5 * concurrent_requests, when concurrent_requests = 1. |
+| `$concurrent_requests` | Number of concurrent requests to make. |
+| `$results` | Path to store end results to. |
+| `$MODEL_NAME` | Name of the model. Consistent with the model name used in the server. |
+| `$MODEL_PATH` | Path to the model. |
+
+### Example
+<!-- 1,4,8,16,32,64,128,256 -->
+| `$concurrent_requests` | `$total_requests` |    ISL/OSL   |
+| ---------------------- | ----------------- | ------------ |
+| 1                      | 5                 | 128/128      |
+| 1                      | 5                 | 2048/128     |
+| 1                      | 5                 | 128/2048     |
+| 1                      | 5                 | 2048/2048    |
+| 4                      | 4                 | 128/2048     |
+| 8                      | 8                 | 128/2048     |
+| 16                     | 16                | 128/2048     |
+| 32                     | 32                | 128/2048     |
+| 64                     | 64                | 128/2048     |
+| 128                    | 128               | 128/2048     |
+| 256                    | 256               | 128/2048     |
+
 # Basic Usage
 
 We implement 2 tests for evaluating LLMs: a load test to check for performance and a correctness test to check for correctness.

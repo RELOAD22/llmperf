@@ -28,6 +28,7 @@ class OpenAIChatCompletionsClient(LLMClient):
             "model": model,
             "messages": message,
             "stream": True,
+            "temperature" : 0.0,
         }
         sampling_params = request_config.sampling_params
         body.update(sampling_params or {})
