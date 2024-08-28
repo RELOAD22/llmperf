@@ -9,7 +9,7 @@ cd llmperf
 pip install -e .
 ```
 
-# Usage Example for vLLM testing
+# Usage Example for vLLM Testing
 
 Install vLLM with `pip` or [from source](https://vllm.readthedocs.io/en/latest/getting_started/installation.html#build-from-source):
 
@@ -43,6 +43,31 @@ python token_benchmark_ray.py --model $MODEL_NAME --mean-input-tokens $isl   --s
 | `$MODEL_NAME` | Name of the model. Consistent with the model name used in the server. |
 | `$MODEL_PATH` | Path to the model. |
 
+### Model Configuration
+
+The model should be configured to disable the generation of EOS tokens. This can be done by modifying the model configuration file. 
+
+In `config.json`, set eos_token_id to `-1`:
+
+```json
+    "eos_token_id": -1
+```
+
+In `generation_config.json`, set eos_token_id to `[-1, -1]`:
+```json
+    "eos_token_id": [-1, -1],
+```
+
+In `special_tokens_map.json`, set eos_token to `<|noend_of_text|>`:
+```json
+    "eos_token": "<|noend_of_text|>"
+```
+
+In `tokenizer_config.json`, set eos_token to `<|noeot_id|>`:
+
+```json
+    "eos_token": "<|noeot_id|>",
+```
 ### Example
 <!-- 1,4,8,16,32,64,128,256 -->
 | `$concurrent_requests` | `$total_requests` |    ISL/OSL   |
