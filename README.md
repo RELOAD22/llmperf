@@ -9,6 +9,11 @@ cd llmperf
 pip install -e .
 ```
 
+# Benchmark Script
+```bash
+./run_bench.sh <backend_name> <port> <model_name> <model_dir> <results_dir>
+```
+
 # Usage Example for vLLM Testing
 
 Install vLLM with `pip` or [from source](https://vllm.readthedocs.io/en/latest/getting_started/installation.html#build-from-source):
